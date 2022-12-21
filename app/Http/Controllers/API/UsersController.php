@@ -51,7 +51,6 @@ class UsersController extends Controller
         $user   = User::where('email',$req->email)->first();
         if(!$user) return response()->json(['status'=> false,'error' => "Username tidak ditemukan",]);
         if(!Hash::check($req->password,$user->password)) return response()->json(['status'=>false,'error' => "Password Salah",]);
-
         $token = $user->createToken($user->name)->accessToken;
         return response()->json([
             'status'    => true,

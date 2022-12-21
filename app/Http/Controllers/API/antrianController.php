@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\loket;
-use Illuminate\Database\Query\Expression;
+use App\Models\antrian;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
-class LoketController extends Controller
+class antrianController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -17,18 +17,24 @@ class LoketController extends Controller
      */
     public function index()
     {
-        $search = loket::get();
-        $respon = [
-            "status" => true,
-            "message"=> "OK",
-            "data"   => $search
-        ];
-        if($search == null) {
-            $respon['status']   = false;
-            $respon['message']  = "Data tidak ditemukan";
+        $getalldata = antrian::whereDate('created_at', Carbon::today())->get();
+        $getantrian = $getalldata->groupBy('id_loket');
+        $keys       = array_keys($getantrian->all());
+        // $counts      = array_keys($getantrian->all())->count();
+        // $getantrian['1']->count();
+        $hasil = [];
+        $data  = [];
+        for($i = 0; $i < sizeof($keys); $i++){
+            $key   = $keys[$i];
+            array_push($data,[
+                'id'    => $key,
+                'data'  => $getantrian[$key],
+                'total' => $getantrian[$key]->count()
+            ]);
         }
-
-        return response()->json($respon);
+        $hasil['status'] = true;
+        $hasil['data'] = $data;
+        return response()->json($hasil);
     }
 
     /**
@@ -40,14 +46,14 @@ class LoketController extends Controller
     public function store(Request $request)
     {
         $validator  = Validator::make(Request()->all(),[
-            'id_loket' => 'required',
-            'nama_loket' => 'required',
+            'id_loket'      => 'required',
+            'id_antrian'    => 'required',
         ]);
         if($validator->fails()){
             return response()->json(['status'=> false,'message'=>$validator->errors()], 401);
         }
-
-        $proses = loket::create($request->all());
+        $request['status'] = false;
+        $proses = antrian::create($request->all());
 
         $respon = [
             "status" => true,
@@ -68,6 +74,10 @@ class LoketController extends Controller
         //
     }
 
+    public function getantrian(){
+
+    }
+
     /**
      * Update the specified resource in storage.
      *
@@ -77,7 +87,7 @@ class LoketController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $search = loket::where('id_loket',$id)->first();
+        $search = antrian::where('id_antrian',$id)->first();
         $respon = [
             "status" => true,
             "message"=> "data berhasil diubah",
@@ -86,6 +96,11 @@ class LoketController extends Controller
             $respon['status']   = false;
             $respon['message']  = "Data tidak ditemukan";
             return response()->json($respon);
+        }
+        if($request->status === "true"){
+            $request['status'] = true;
+        }else{
+            $request['status'] = false;
         }
         if(!$search->update($request->all())){
             $respon['status']   = false;
@@ -102,17 +117,6 @@ class LoketController extends Controller
      */
     public function destroy($id)
     {
-        $respon = [];
-        $search = loket::where('id_loket',$id)->first();
-        if($search == null) {
-            $respon['status']   = false;
-            $respon['message']  = "Data tidak ditemukan";
-            return response()->json($respon);
-        }
-        if($search->delete()){
-            $respon['status']   = false;
-            $respon['message']  = "Data berhasil dihapus";
-            return response()->json($respon);
-        }
+        //
     }
 }
